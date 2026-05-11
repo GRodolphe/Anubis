@@ -1,4 +1,0 @@
-pycryptodome
-regex
-requests
-Cython
