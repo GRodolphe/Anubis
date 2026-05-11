@@ -1,12 +1,11 @@
-from distutils.core import setup
-from distutils.extension import Extension
-from Cython.Distutils import build_ext
-ext_modules = [
-    Extension("ancrypt",  ["ancrypt.py"]),
-]
+from setuptools import setup, Extension
+from Cython.Build import cythonize
+
+ext_modules = cythonize([
+    Extension("ancrypt", ["ancrypt.py"]),
+])
 
 setup(
-    name = 'Ancrypt',
-    cmdclass = {'build_ext': build_ext},
-    ext_modules = ext_modules
+    name="Ancrypt",
+    ext_modules=ext_modules,
 )

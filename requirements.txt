@@ -1,3 +1,4 @@
-﻿pycryptodome
-nuitka
+pycryptodome
 regex
+requests
+Cython
