@@ -39,10 +39,13 @@ This fork modernizes the original codebase, fixes reported bugs, and adds new fe
 
 :heavy_check_mark: **Anti-Debugger** — Kills known debugger processes at runtime (cross-platform; fixes #29 / #18)\
 :heavy_check_mark: **Junk Code** — Injects unreachable class/function definitions\
+:heavy_check_mark: **Mix Strings** — Replaces string literals with `chr()` chains: `"hi"` → `(chr(104)+chr(105))`\
+:heavy_check_mark: **Big Script** — Inflates output with ~256 KB of random dead-code blobs\
 :heavy_check_mark: **Carbon** — Renames identifiers, removes comments & docstrings (offline, fixes #31)\
-:heavy_check_mark: **Oxyry** — Remote identifier renaming via oxyry.com\
 :heavy_check_mark: **Import Aliasing** — Obfuscates imported module names (feature #26)\
 :heavy_check_mark: **AES Encryption** — Encrypts source into a self-decrypting one-liner\
+:heavy_check_mark: **RFT** — Run From Text: encodes entire source as `zlib+base64` and `exec()`s it\
+:heavy_check_mark: **BCC** — Bytecode Compilation: `compile()` → `marshal` → `zlib` → `base64` loader stub\
 :heavy_check_mark: **CLI interface** — Use flags or interactive prompts\
 :heavy_check_mark: **Nuitka compilation** — Compile the obfuscated output to a standalone exe
 
@@ -99,13 +102,16 @@ Prompts you through every option step-by-step.
 anubis script.py --carbon --junk
 
 # Full protection: junk + anti-debug + rename + encrypt
-anubis script.py --junk --antidebug --carbon --encrypt
+anubis script.py --junk --antidebug --carbon --mix-strings --encrypt
 
-# Rename + alias imports + compile to exe
-anubis script.py --carbon --import-alias --compile
+# Bytecode compilation (hardest to decompile)
+anubis script.py --carbon --mix-strings --bcc
 
-# Rename via oxyry.com
-anubis script.py --oxyry
+# Double-encode: RFT then BCC
+anubis script.py --carbon --rft --bcc
+
+# Inflate + rename + alias imports + compile to exe
+anubis script.py --big-script --carbon --import-alias --compile
 ```
 
 ### Flag reference
@@ -114,11 +120,14 @@ anubis script.py --oxyry
 |------|-------------|
 | `--antidebug` | Inject anti-debugger thread (cross-platform) |
 | `--junk` | Wrap code in unreachable junk class definitions |
+| `--mix-strings` | Replace string literals with `chr()` chains |
+| `--big-script` | Inflate output with ~256 KB of random dead-code blobs |
 | `--carbon` | Rename identifiers offline |
-| `--oxyry` | Rename identifiers via oxyry.com |
 | `--import-alias` | Obfuscate imported module names |
 | `--encrypt` | AES-encrypt source into self-decrypting one-liner (requires `ancrypt`) |
-| `--compile` | Compile output to exe with Nuitka (incompatible with `--encrypt`) |
+| `--rft` | RFT: zlib+base64 encode source, exec at runtime |
+| `--bcc` | BCC: compile to bytecode, marshal+zlib+base64 loader |
+| `--compile` | Compile output to exe with Nuitka |
 | `--version` | Print version and exit |
 
 ### Building ancrypt

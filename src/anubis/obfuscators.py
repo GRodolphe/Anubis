@@ -1,16 +1,17 @@
-"""Obfuscation passes: identifier renaming, junk code, import aliasing, anti-debug."""
+"""Obfuscation passes: renaming, junk, string mixing, encoding, anti-debug."""
 
 from __future__ import annotations
 
 import ast
+import base64
 import io
+import marshal
 import os
 import random
 import re
 import string
 import tokenize
-
-import requests
+import zlib
 
 from anubis.terminal import error
 
@@ -35,8 +36,8 @@ def _unique_name(used: set[str]) -> str:
 def _collect_imported_names(parsed: ast.Module) -> set[str]:
     """Return names bound by import statements — these must not be renamed.
 
-    Renames would turn ``import signal`` into ``import IlIlIlIl`` and cause
-    ModuleNotFoundError at runtime (issue #31).
+    Without this guard, ``import signal`` would become ``import IlIlIlIl``,
+    causing ModuleNotFoundError at runtime (issue #31).
     """
     names: set[str] = set()
     for node in ast.walk(parsed):
@@ -82,7 +83,7 @@ def remove_docs(source: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Identifier rename (Carbon)
+# Carbon — offline identifier renaming
 # ---------------------------------------------------------------------------
 
 
@@ -96,7 +97,7 @@ _PROGRESS_CYCLES = ["[   " + "> " * n + "  " * (23 - n) + "]" for n in range(1, 
 
 
 def carbon(code: str) -> str:
-    """Rename identifiers using random I/l strings (offline, no network needed)."""
+    """Rename identifiers using random I/l strings (offline)."""
     code = remove_docs(code)
     parsed = ast.parse(code)
     protected = _collect_imported_names(parsed)
@@ -171,88 +172,147 @@ def carbon(code: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Identifier rename (Oxyry — remote)
+# Mix Strings — replace string literals with chr() chains
 # ---------------------------------------------------------------------------
 
 
-def oxyry(code: str) -> str:
-    """Rename identifiers via the oxyry.com API (requires network)."""
-    src = "__all__ = []\n" + code.replace('"', '\\"').replace("'", "\\'").replace("\\", "\\\\")
-    payload = {
-        "append_source": False,
-        "remove_docstrings": True,
-        "rename_nondefault_parameters": True,
-        "rename_default_parameters": True,
-        "preserve": "",
-        "source": src,
-    }
+def _is_simple_string_token(tok_string: str) -> bool:
+    """Return True for plain unquoted string literals that can be chr()-encoded."""
+    # Skip triple-quoted strings (docstrings / multiline)
+    if '"""' in tok_string or "'''" in tok_string:
+        return False
+    # Skip prefixed strings: f"", b"", r"", rb"", etc.
+    prefix = ""
+    for ch in tok_string:
+        if ch not in "fFbBrRuU":
+            break
+        prefix += ch
+    return not any(c in prefix.lower() for c in "fbr")
+
+
+def mix_strings(code: str) -> str:
+    """Replace simple string literals with ``chr()`` chain expressions.
+
+    ``"hello"`` becomes ``(chr(104)+chr(101)+chr(108)+chr(108)+chr(111))``.
+    Triple-quoted strings, f-strings, bytes, and raw strings are skipped.
+    Strings longer than 80 characters are skipped to avoid bloat.
+    """
     try:
-        r = requests.post("https://pyob.oxyry.com/obfuscate", json=payload, timeout=30)
-        data: dict[str, str] = r.json()
-    except Exception:
-        error("A problem occurred whilst contacting oxyry.com")
-
-    if "dest" not in data:
-        error(
-            f"{data.get('errorMessage', 'Unknown error')}\n"
-            "        [!] Please make sure your code is Python 3.3 - 3.7 compatible"
-        )
-
-    result = data["dest"].replace("\\\\", "\\")
-    result = re.sub(r"#\w*:[0-9]*", "", result)
-    for pat in ("__all__=[]\n", "__all__ =[]\n", "__all__ = []\n", "__all__= []\n"):
-        result = result.replace(pat, "")
-    return result
-
-
-# ---------------------------------------------------------------------------
-# Import aliasing (issue #26)
-# ---------------------------------------------------------------------------
-
-
-def add_import_aliases(code: str) -> str:
-    """Rewrite ``import X`` → ``import X as <obfuscated>`` throughout the source."""
-    parsed = ast.parse(code)
-    pairs: dict[str, str] = {}
-    used: set[str] = set()
-
-    for node in ast.walk(parsed):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                if alias.asname is None:
-                    original = alias.name.split(".")[0]
-                    if original not in pairs:
-                        pairs[original] = _unique_name(used)
-
-    if not pairs:
+        tokens = list(tokenize.generate_tokens(io.StringIO(code).readline))
+    except tokenize.TokenError:
         return code
 
-    for original, obfname in pairs.items():
-        # Rewrite the import statement
-        code = re.sub(
-            rf"^(import\s+{re.escape(original)})\s*$",
-            rf"\1 as {obfname}",
-            code,
-            flags=re.MULTILINE,
-        )
-        # Replace all usages
-        code = re.sub(rf"\b{re.escape(original)}\b", obfname, code, flags=re.MULTILINE)
-        # Restore the module name inside the import statement itself
-        code = re.sub(
-            rf"^(import\s+){re.escape(obfname)}(\s+as\s+{re.escape(obfname)})",
-            rf"\g<1>{original}\2",
-            code,
-            flags=re.MULTILINE,
-        )
+    # Collect (start_row, start_col, end_row, end_col, replacement) for single-line strings
+    replacements: list[tuple[int, int, int, int, str]] = []
+    for tok in tokens:
+        if tok.type != tokenize.STRING:
+            continue
+        if not _is_simple_string_token(tok.string):
+            continue
+        try:
+            value = ast.literal_eval(tok.string)
+        except (ValueError, SyntaxError):
+            continue
+        if not isinstance(value, str) or not value or len(value) > 80:
+            continue
+        start_row, start_col = tok.start
+        end_row, end_col = tok.end
+        if start_row != end_row:
+            continue  # Skip multi-line strings
+        obf = "(" + "+".join(f"chr({ord(c)})" for c in value) + ")"
+        replacements.append((start_row, start_col, end_row, end_col, obf))
 
-    return code
+    if not replacements:
+        return code
+
+    lines = code.splitlines(keepends=True)
+    # Process in reverse order so earlier positions stay valid
+    replacements.sort(key=lambda r: (r[0], r[1]), reverse=True)
+    for start_row, start_col, _end_row, end_col, obf in replacements:
+        idx = start_row - 1  # tokenize rows are 1-based
+        if idx < 0 or idx >= len(lines):
+            continue
+        line = lines[idx]
+        lines[idx] = line[:start_col] + obf + line[end_col:]
+
+    return "".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Big Script — inflate with random dead-code blobs
+# ---------------------------------------------------------------------------
+
+
+def big_script(code: str, junk_kb: int = 256) -> str:
+    """Prepend random byte-blob variable assignments to inflate script size.
+
+    The blobs are never referenced and are optimised away if the bytecode is
+    compiled — they only obscure static analysis of the source file.
+    """
+    chunks: list[str] = []
+    total = 0
+    target = junk_kb * 1024
+
+    while total < target:
+        name = "_" + "".join(
+            random.choices(string.ascii_lowercase + string.digits, k=random.randint(12, 20))
+        )
+        blob = random.randbytes(random.randint(120, 400))
+        chunk = f"{name} = {blob!r}\n"
+        chunks.append(chunk)
+        total += len(chunk)
+
+    return "".join(chunks) + "\n" + code
+
+
+# ---------------------------------------------------------------------------
+# RFT — Run From Text (source → zlib → base64 → exec)
+# ---------------------------------------------------------------------------
+
+
+def rft_mode(code: str) -> str:
+    """Encode the entire source as a compressed base64 blob and exec it.
+
+    The source can be recovered by decoding the blob, so combine with other
+    passes for stronger protection.
+    """
+    compressed = zlib.compress(code.encode("utf-8"), level=9)
+    encoded = base64.b64encode(compressed)
+    return (
+        f"import zlib as _z,base64 as _b\nexec(_z.decompress(_b.b64decode({encoded!r})).decode())\n"
+    )
+
+
+# ---------------------------------------------------------------------------
+# BCC — Bytecode Compilation (source → compile → marshal → zlib → base64)
+# ---------------------------------------------------------------------------
+
+
+def bcc_mode(code: str) -> str:
+    """Compile source to a code object, marshal it, and embed a loader stub.
+
+    The output cannot be trivially decompiled with ``uncompyle6`` / ``decompile3``.
+    Note: the bytecode is Python-version–specific — the loader must run on
+    the same interpreter version that produced it.
+    """
+    try:
+        code_obj = compile(code, "<anubis>", "exec")
+    except SyntaxError as exc:
+        error(f"BCC compilation failed: {exc}")
+
+    marshaled = marshal.dumps(code_obj)
+    compressed = zlib.compress(marshaled, level=9)
+    encoded = base64.b64encode(compressed)
+    return (
+        "import marshal as _m,zlib as _z,base64 as _b\n"
+        f"exec(_m.loads(_z.decompress(_b.b64decode({encoded!r}))))\n"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Anti-debugger injection
 # ---------------------------------------------------------------------------
 
-# Known debugger process names, hex-encoded so they don't appear as plaintext.
 _DEBUGGER_HEX_NAMES: list[str] = [
     "53757370656e64",
     "50726f67726573732054656c6572696b20466964646c657220576562204465627567676572",
@@ -304,7 +364,7 @@ _DEBUGGER_HEX_NAMES: list[str] = [
     "646534646f74",
     "696c737079",
     "67726179776f6c66",
-    "73696d706c65617373656d626c796578706c6f726572",  # simpleassemblyexplorer
+    "73696d706c65617373656d626c796578706c6f726572",
     "7836346e657464756d706572",
     "687864",
     "7065746f6f6c73",
@@ -340,34 +400,33 @@ _DEBUGGER_HEX_NAMES: list[str] = [
 
 
 def bugs(code: str) -> str:
-    """Prepend anti-debugger bootstrap code to *code*.
+    """Prepend anti-debugger bootstrap code.
 
     Uses ``ctypes.windll`` only on Windows; falls back to a cross-platform
     psutil process scanner everywhere else (fixes issues #29, #18).
     """
     header = (
-        "import binascii as _bi, platform as _pl, threading as _th, time as _ti\n"
+        "import binascii as _bi,platform as _pl,threading as _th,time as _ti\n"
         "try:\n"
         "    from psutil import process_iter as _pi\n"
         "except ImportError:\n"
-        "    import os as _os; _os.system('pip install psutil')\n"
+        "    import os as _os;_os.system('pip install psutil')\n"
         "    from psutil import process_iter as _pi\n"
-        "if _pl.system() == 'Windows':\n"
+        "if _pl.system()=='Windows':\n"
         "    import ctypes as _ct\n"
         "    if not _ct.windll.shell32.IsUserAnAdmin():\n"
         "        print('Please run this program as administrator.')\n"
         "        __import__('sys').exit(0)\n"
-        f"_d = {_DEBUGGER_HEX_NAMES!r}\n"
-        "_d = [_bi.unhexlify(i).decode() for i in _d]\n"
+        f"_d=[_bi.unhexlify(i).decode() for i in {_DEBUGGER_HEX_NAMES!r}]\n"
         "def _dbg():\n"
         "    while True:\n"
         "        try:\n"
         "            for _p in _pi():\n"
         "                for _n in _d:\n"
-        "                    if _n.lower() in _p.name().lower(): _p.kill()\n"
-        "        except Exception: pass\n"
+        "                    if _n.lower() in _p.name().lower():_p.kill()\n"
+        "        except Exception:pass\n"
         "        _ti.sleep(0.5)\n"
-        "_th.Thread(target=_dbg, daemon=True).start()\n\n"
+        "_th.Thread(target=_dbg,daemon=True).start()\n\n"
     )
     return header + code
 
@@ -403,3 +462,43 @@ def _make_junk_block() -> str:
 def junk_code(code: str) -> str:
     """Wrap *code* with unreachable junk class definitions."""
     return "\n" + _make_junk_block() + "\n" + code + "\n" + _make_junk_block()
+
+
+# ---------------------------------------------------------------------------
+# Import aliasing (issue #26)
+# ---------------------------------------------------------------------------
+
+
+def add_import_aliases(code: str) -> str:
+    """Rewrite ``import X`` → ``import X as <obfuscated>`` throughout the source."""
+    parsed = ast.parse(code)
+    pairs: dict[str, str] = {}
+    used: set[str] = set()
+
+    for node in ast.walk(parsed):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.asname is None:
+                    original = alias.name.split(".")[0]
+                    if original not in pairs:
+                        pairs[original] = _unique_name(used)
+
+    if not pairs:
+        return code
+
+    for original, obfname in pairs.items():
+        code = re.sub(
+            rf"^(import\s+{re.escape(original)})\s*$",
+            rf"\1 as {obfname}",
+            code,
+            flags=re.MULTILINE,
+        )
+        code = re.sub(rf"\b{re.escape(original)}\b", obfname, code, flags=re.MULTILINE)
+        code = re.sub(
+            rf"^(import\s+){re.escape(obfname)}(\s+as\s+{re.escape(obfname)})",
+            rf"\g<1>{original}\2",
+            code,
+            flags=re.MULTILINE,
+        )
+
+    return code
