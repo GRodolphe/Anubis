@@ -1,0 +1,17 @@
+# Example: obfuscate a Python script in GitLab CI.
+# GitLab sets CI=true automatically, so --ci is optional here.
+
+stages:
+  - obfuscate
+
+obfuscate:
+  stage: obfuscate
+  image: python:3.12-slim
+  before_script:
+    - pip install git+https://github.com/GRodolphe/Anubis.git
+  script:
+    - anubis example/script.py --ci --carbon --junk --output dist/script-obf.py
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 7 days
