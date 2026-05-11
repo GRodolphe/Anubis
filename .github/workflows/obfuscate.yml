@@ -26,7 +26,9 @@ jobs:
         run: pip install git+https://github.com/GRodolphe/Anubis.git
 
       - name: Obfuscate
-        run: anubis example/script.py --ci --carbon --junk --output dist/script-obf.py
+        run: |
+          mkdir -p dist
+          anubis example/script.py --ci --carbon --junk --output dist/script-obf.py
 
       - name: Upload obfuscated artifact
         uses: actions/upload-artifact@v4
