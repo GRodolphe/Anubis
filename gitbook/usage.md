@@ -94,6 +94,26 @@ anubis script.py --carbon --xor-strings -o /tmp/protected.py
 anubis script.py --flatten --carbon --bcc --ci
 ```
 
+## anubis.toml
+
+Pin your flag choices in a config file so every pipeline invocation stays short:
+
+```toml
+[obfuscate]
+carbon = true
+junk   = true
+bcc    = true
+output = "dist/script-obf.py"
+```
+
+Place `anubis.toml` in the directory you run `anubis` from, then:
+
+```bash
+anubis script.py --ci   # reads anubis.toml, no long flag lists
+```
+
+CLI flags always override `anubis.toml` values. Unknown keys and wrong-typed values are silently ignored.
+
 ## Notes
 
 - `--encrypt` and `--compile` are mutually exclusive.

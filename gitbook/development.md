@@ -16,17 +16,22 @@ src/anubis/
   __init__.py       # package marker, __version__
   __main__.py       # enables python -m anubis
   cli.py            # argparse entry point + interactive mode
+  config.py         # anubis.toml loader (load_config)
   obfuscators.py    # all obfuscation passes
   crypto.py         # AES encryption (Encryption class)
-  terminal.py       # ANSI colour helpers, clear/pause/leave/error
+  terminal.py       # ANSI colour helpers, is_ci, clear/pause/leave/error
 ancrypt.py          # Cython source for the AES runtime loader
 setup.py            # build ancrypt extension only
 pyproject.toml      # project metadata, ruff, ty config
+anubis.toml         # optional: pin obfuscation flags (see CI/CD Mode)
 tests/
-  check_obf.sh      # test helper: run original, obfuscate, compare output
-  scripts/          # deterministic test scripts
+  test_terminal.py  # unit tests for is_ci() and CI-safe helpers
+  test_config.py    # unit tests for anubis.toml loader
+  test_cli.py       # integration tests for --ci and --output flags
 .github/workflows/
   ci.yml            # lint + obfuscation matrix (Python 3.10–3.13)
+  obfuscate.yml     # example: obfuscate a script as a CI job
+.gitlab-ci.yml      # example: GitLab CI obfuscation job
 gitbook/            # documentation source (this site)
 ```
 

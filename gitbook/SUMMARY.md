@@ -19,4 +19,5 @@
   - [AES Encrypt](features/encrypt.md)
   - [RFT — Run From Text](features/rft.md)
   - [BCC — Bytecode Compilation](features/bcc.md)
+- [CI/CD Mode](ci-cd.md)
 - [Development](development.md)

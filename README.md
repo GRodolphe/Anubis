@@ -129,6 +129,9 @@ anubis script.py --carbon --rft --bcc
 
 # Inflate + rename + alias imports + compile to exe
 anubis script.py --big-script --carbon --import-alias --compile
+
+# CI/CD pipeline — plain output, exit 1 on error, custom output path
+anubis script.py --carbon --bcc --ci --output dist/script-obf.py
 ```
 
 ### Flag reference
@@ -158,6 +161,13 @@ anubis script.py --big-script --carbon --import-alias --compile
 | `--rft` | RFT: zlib+base64 encode source, exec at runtime |
 | `--bcc` | BCC: compile to bytecode, marshal+zlib+base64 loader |
 | `--compile` | Compile output to exe with Nuitka |
+
+**Pipeline control**
+
+| Flag | Description |
+|------|-------------|
+| `-o PATH` / `--output PATH` | Write output to this path (default: `<stem>-obf.py`) |
+| `--ci` | CI/CD mode: no interactive prompts, plain stdout, exit 1 on error |
 | `--version` | Print version and exit |
 
 ### Pipeline order
@@ -171,6 +181,39 @@ junk → antidebug → junk → flatten → opaque
 → import-alias → dynamic-imports → big-script
 → encrypt → rft → bcc
 ```
+
+### CI/CD mode
+
+Pass `--ci` (or set `CI=true` in the environment, which GitHub Actions and GitLab CI do automatically) to get pipeline-safe output:
+
+- No banner, no terminal clears, no keypress waits
+- Plain `Obfuscated: <path>` to stdout on success
+- Errors go to stderr; process exits with code 1
+
+```bash
+# In any pipeline script
+anubis script.py --ci --carbon --junk --bcc --output dist/script-obf.py
+```
+
+### anubis.toml
+
+Pin your obfuscation flags in a config file so pipelines stay short:
+
+```toml
+[obfuscate]
+carbon = true
+junk   = true
+bcc    = true
+output = "dist/script-obf.py"
+```
+
+Then just run:
+
+```bash
+anubis script.py --ci
+```
+
+CLI flags always override `anubis.toml` values.
 
 ### Building ancrypt
 
