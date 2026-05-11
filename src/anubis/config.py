@@ -13,10 +13,20 @@ else:
     except ImportError:
         tomllib = None  # type: ignore[assignment]
 
-_BOOL_KEYS = frozenset({
-    "antidebug", "junk", "mix_strings", "big_script",
-    "carbon", "import_alias", "encrypt", "rft", "bcc", "compile",
-})
+_BOOL_KEYS = frozenset(
+    {
+        "antidebug",
+        "junk",
+        "mix_strings",
+        "big_script",
+        "carbon",
+        "import_alias",
+        "encrypt",
+        "rft",
+        "bcc",
+        "compile",
+    }
+)
 _STR_KEYS = frozenset({"output"})
 
 
@@ -35,6 +45,8 @@ def load_config(path: Path | None = None) -> dict[str, bool | str]:
     section = data.get("obfuscate", {})
     result: dict[str, bool | str] = {}
     for key, value in section.items():
-        if (key in _BOOL_KEYS and isinstance(value, bool)) or (key in _STR_KEYS and isinstance(value, str)):
+        if (key in _BOOL_KEYS and isinstance(value, bool)) or (
+            key in _STR_KEYS and isinstance(value, str)
+        ):
             result[key] = value
     return result

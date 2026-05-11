@@ -519,3 +519,516 @@ def add_import_aliases(code: str) -> str:
         )
 
     return code
+
+
+# ---------------------------------------------------------------------------
+# XOR String Encryption — replace string literals with keyed XOR cipher
+# ---------------------------------------------------------------------------
+
+
+def xor_strings(code: str) -> str:
+    """Encrypt every plain string constant with a random one-byte XOR key.
+
+    Injects a tiny decoder lambda at the top and replaces each string with
+    a ``decoder(b'...', key)`` call.  Unlike ``mix_strings``, the plaintext
+    never appears in the source or .pyc.  F-strings, non-ASCII strings, and
+    strings longer than 200 chars are skipped.
+    """
+    key = random.randint(1, 255)
+    dec_name = _random_name(8)
+
+    class _XorTransformer(ast.NodeTransformer):
+        def visit_JoinedStr(self, node: ast.JoinedStr) -> ast.JoinedStr:  # noqa: N802
+            return node  # don't recurse into f-strings
+
+        def visit_Constant(self, node: ast.Constant) -> ast.AST:  # noqa: N802
+            if not isinstance(node.value, str) or not node.value or len(node.value) > 200:
+                return node
+            try:
+                encrypted = bytes(ord(c) ^ key for c in node.value)
+            except (ValueError, OverflowError):
+                return node
+            return ast.Call(
+                func=ast.Name(id=dec_name, ctx=ast.Load()),
+                args=[ast.Constant(value=encrypted), ast.Constant(value=key)],
+                keywords=[],
+            )
+
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return code
+
+    new_tree = _XorTransformer().visit(tree)
+    ast.fix_missing_locations(new_tree)
+    try:
+        new_code = ast.unparse(new_tree)
+    except Exception:
+        return code
+
+    return f"{dec_name}=lambda b,k:''.join(chr(c^k)for c in b)\n" + new_code
+
+
+# ---------------------------------------------------------------------------
+# Constant Blinding — replace integer literals with XOR expressions
+# ---------------------------------------------------------------------------
+
+
+def blind_constants(code: str) -> str:
+    """Replace every integer literal ``N`` with ``(N^R)^R`` for a random R.
+
+    Hides magic numbers, port numbers, and sizes from static analysis
+    without touching booleans, floats, or values larger than 0xFFFF.
+    """
+
+    class _BlindTransformer(ast.NodeTransformer):
+        def visit_Constant(self, node: ast.Constant) -> ast.AST:  # noqa: N802
+            if isinstance(node.value, bool) or not isinstance(node.value, int):
+                return node
+            if abs(node.value) > 0xFFFF:
+                return node
+            r = random.randint(1, 0xFFFF)
+            return ast.BinOp(
+                left=ast.Constant(value=node.value ^ r),
+                op=ast.BitXor(),
+                right=ast.Constant(value=r),
+            )
+
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return code
+
+    new_tree = _BlindTransformer().visit(tree)
+    ast.fix_missing_locations(new_tree)
+    try:
+        return ast.unparse(new_tree)
+    except Exception:
+        return code
+
+
+# ---------------------------------------------------------------------------
+# Opaque Predicates — wrap function bodies in always-true guards
+# ---------------------------------------------------------------------------
+
+
+def _make_opaque_true_expr() -> ast.expr:
+    """Return an AST expression that is provably always True at runtime."""
+    n = random.randint(0, 999)
+    v = random.randint(0, 2)
+    arg = ast.arg(arg="_x")
+    x = ast.Name(id="_x", ctx=ast.Load())
+    no_args = ast.arguments(
+        posonlyargs=[],
+        args=[arg],
+        vararg=None,
+        kwonlyargs=[],
+        kw_defaults=[],
+        kwarg=None,
+        defaults=[],
+    )
+    if v == 0:
+        # (lambda _x: _x | 1 != 0)(n)
+        body: ast.expr = ast.Compare(
+            left=ast.BinOp(left=x, op=ast.BitOr(), right=ast.Constant(value=1)),
+            ops=[ast.NotEq()],
+            comparators=[ast.Constant(value=0)],
+        )
+    elif v == 1:
+        # (lambda _x: _x * _x >= 0)(n)
+        body = ast.Compare(
+            left=ast.BinOp(left=x, op=ast.Mult(), right=x),
+            ops=[ast.GtE()],
+            comparators=[ast.Constant(value=0)],
+        )
+    else:
+        # (lambda _x: (_x ^ _x) == 0)(n)
+        body = ast.Compare(
+            left=ast.BinOp(left=x, op=ast.BitXor(), right=x),
+            ops=[ast.Eq()],
+            comparators=[ast.Constant(value=0)],
+        )
+    return ast.Call(
+        func=ast.Lambda(args=no_args, body=body),
+        args=[ast.Constant(value=n)],
+        keywords=[],
+    )
+
+
+def opaque_predicates(code: str) -> str:
+    """Wrap every function body in an always-true opaque predicate.
+
+    The ``else`` branch contains unreachable dead code that confuses static
+    analysers and degrades LLM-based deobfuscation attempts.
+    """
+
+    class _OpaqueTransformer(ast.NodeTransformer):
+        def _wrap(
+            self,
+            node: ast.FunctionDef | ast.AsyncFunctionDef,
+        ) -> ast.FunctionDef | ast.AsyncFunctionDef:
+            self.generic_visit(node)
+            if not node.body or (len(node.body) == 1 and isinstance(node.body[0], ast.Pass)):
+                return node
+            dead_var = _random_name(6)
+            dead_stmts: list[ast.stmt] = [
+                ast.Assign(
+                    targets=[ast.Name(id=dead_var, ctx=ast.Store())],
+                    value=ast.Constant(value=random.randint(0, 9999)),
+                    lineno=0,
+                    col_offset=0,
+                ),
+                ast.Pass(),
+            ]
+            wrapped = ast.If(
+                test=_make_opaque_true_expr(),
+                body=node.body,
+                orelse=dead_stmts,
+            )
+            ast.fix_missing_locations(wrapped)
+            node.body = [wrapped]
+            return node
+
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:  # noqa: N802
+            return self._wrap(node)
+
+        def visit_AsyncFunctionDef(  # noqa: N802
+            self, node: ast.AsyncFunctionDef
+        ) -> ast.AsyncFunctionDef:
+            return self._wrap(node)
+
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return code
+
+    new_tree = _OpaqueTransformer().visit(tree)
+    ast.fix_missing_locations(new_tree)
+    try:
+        return ast.unparse(new_tree)
+    except Exception:
+        return code
+
+
+# ---------------------------------------------------------------------------
+# Dynamic Imports — replace import statements with __import__() calls
+# ---------------------------------------------------------------------------
+
+
+def dynamic_imports(code: str) -> str:
+    """Replace ``import X`` statements with XOR-encoded ``__import__()`` calls.
+
+    The module name is never a plain string in the output.
+    ``from X import Y`` forms are left intact.
+    """
+    key = random.randint(1, 255)
+    dec_name = _random_name(8)
+
+    lines = code.splitlines()
+    out: list[str] = []
+    for line in lines:
+        m = re.match(r"^(\s*)import\s+([\w.]+)\s*(?:as\s+(\w+))?\s*$", line)
+        if m:
+            indent, mod, alias = m.group(1), m.group(2), m.group(3)
+            bind_name = alias if alias else mod.split(".")[0]
+            encoded = bytes(ord(c) ^ key for c in mod)
+            out.append(f"{indent}{bind_name}=__import__({dec_name}({encoded!r},{key}))")
+        else:
+            out.append(line)
+
+    decoder = f"{dec_name}=lambda b,k:''.join(chr(c^k)for c in b)\n"
+    return decoder + "\n".join(out)
+
+
+# ---------------------------------------------------------------------------
+# Control Flow Flattening — rewrite function bodies as state machines
+# ---------------------------------------------------------------------------
+
+
+def _has_yield(node: ast.AST) -> bool:
+    return any(isinstance(child, (ast.Yield, ast.YieldFrom)) for child in ast.walk(node))
+
+
+def _flatten_func_body(
+    node: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> ast.FunctionDef | ast.AsyncFunctionDef:
+    body = node.body
+    if len(body) < 2 or _has_yield(node):
+        return node
+
+    state_var = _random_name(6)
+    chain: list[ast.stmt] = [ast.Break()]
+
+    for i in reversed(range(len(body))):
+        stmt = body[i]
+        stmt_body: list[ast.stmt] = [stmt]
+        if not isinstance(stmt, (ast.Return, ast.Raise)):
+            stmt_body.append(
+                ast.Assign(
+                    targets=[ast.Name(id=state_var, ctx=ast.Store())],
+                    value=ast.Constant(value=i + 1),
+                    lineno=0,
+                    col_offset=0,
+                )
+            )
+        branch = ast.If(
+            test=ast.Compare(
+                left=ast.Name(id=state_var, ctx=ast.Load()),
+                ops=[ast.Eq()],
+                comparators=[ast.Constant(value=i)],
+            ),
+            body=stmt_body,
+            orelse=chain,
+        )
+        ast.fix_missing_locations(branch)
+        chain = [branch]
+
+    init = ast.Assign(
+        targets=[ast.Name(id=state_var, ctx=ast.Store())],
+        value=ast.Constant(value=0),
+        lineno=0,
+        col_offset=0,
+    )
+    while_loop = ast.While(test=ast.Constant(value=True), body=chain, orelse=[])
+    ast.fix_missing_locations(init)
+    ast.fix_missing_locations(while_loop)
+    node.body = [init, while_loop]
+    return node
+
+
+def flatten_control_flow(code: str) -> str:
+    """Convert every function body into a ``while True`` state-machine.
+
+    Each top-level statement becomes a numbered state. ``return``/``raise``
+    exit naturally; all other transitions advance the state counter.
+    Generators and single-statement functions are skipped.
+    """
+
+    class _CFFTransformer(ast.NodeTransformer):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> ast.FunctionDef:  # noqa: N802
+            self.generic_visit(node)
+            return _flatten_func_body(node)
+
+        def visit_AsyncFunctionDef(  # noqa: N802
+            self, node: ast.AsyncFunctionDef
+        ) -> ast.AsyncFunctionDef:
+            self.generic_visit(node)
+            return _flatten_func_body(node)
+
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return code
+
+    new_tree = _CFFTransformer().visit(tree)
+    ast.fix_missing_locations(new_tree)
+    try:
+        return ast.unparse(new_tree)
+    except Exception:
+        return code
+
+
+# ---------------------------------------------------------------------------
+# Semantic Noise — misleading English identifiers for LLM resistance
+# ---------------------------------------------------------------------------
+
+# Research (arxiv:2512.16538, arxiv:2410.05797) shows LLMs rely heavily on
+# identifier names for semantic understanding.  Plausible but wrong names
+# degrade LLM deobfuscation more effectively than opaque random strings.
+_SEMANTIC_VOCAB: list[str] = [
+    "authenticate",
+    "validate_user",
+    "process_request",
+    "handle_error",
+    "calculate_total",
+    "fetch_data",
+    "parse_config",
+    "update_cache",
+    "send_notification",
+    "log_event",
+    "check_permission",
+    "encrypt_token",
+    "decode_payload",
+    "serialize_data",
+    "deserialize_response",
+    "initialize_connection",
+    "terminate_session",
+    "refresh_credentials",
+    "verify_signature",
+    "compute_hash",
+    "generate_token",
+    "expire_cache",
+    "load_settings",
+    "save_progress",
+    "restore_state",
+    "flush_buffer",
+    "compress_output",
+    "decompress_input",
+    "transform_data",
+    "filter_results",
+    "sort_records",
+    "merge_tables",
+    "split_payload",
+    "join_segments",
+    "user_id",
+    "session_key",
+    "auth_token",
+    "request_body",
+    "response_code",
+    "database_url",
+    "api_endpoint",
+    "retry_count",
+    "timeout_ms",
+    "max_retries",
+    "buffer_size",
+    "chunk_count",
+    "frame_index",
+    "packet_length",
+    "header_size",
+    "total_bytes",
+    "error_code",
+    "status_flag",
+    "event_type",
+    "action_id",
+    "config_path",
+    "output_dir",
+    "temp_file",
+    "log_level",
+    "debug_mode",
+    "is_valid",
+    "has_permission",
+    "is_connected",
+    "was_processed",
+    "can_retry",
+    "handler",
+    "manager",
+    "factory",
+    "builder",
+    "loader",
+    "validator",
+    "converter",
+    "processor",
+    "dispatcher",
+    "scheduler",
+    "executor",
+    "resolver",
+    "formatter",
+    "encoder",
+    "decoder",
+    "parser",
+    "serializer",
+    "result",
+    "payload",
+    "response",
+    "request",
+    "context",
+    "state",
+    "pipeline",
+    "registry",
+    "provider",
+    "consumer",
+    "producer",
+    "broker",
+]
+
+
+def _unique_semantic_name(used: set[str]) -> str:
+    available = [n for n in _SEMANTIC_VOCAB if n not in used]
+    if available:
+        name = random.choice(available)
+    else:
+        a, b = random.choice(_SEMANTIC_VOCAB), random.choice(_SEMANTIC_VOCAB)
+        name = f"{a}_{b}"
+        while name in used:
+            b = random.choice(_SEMANTIC_VOCAB)
+            name = f"{a}_{b}"
+    used.add(name)
+    return name
+
+
+def semantic_noise(code: str) -> str:
+    """Rename identifiers to semantically misleading English names.
+
+    Unlike ``carbon`` (which uses ``IlIl`` strings), this uses plausible
+    programming vocabulary that actively misleads LLM-based code analysis.
+    Run instead of ``carbon`` or after it for maximum confusion.
+    """
+    code = remove_docs(code)
+    try:
+        parsed = ast.parse(code)
+    except SyntaxError:
+        return code
+
+    protected = _collect_imported_names(parsed)
+    funcs = {
+        node
+        for node in ast.walk(parsed)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    classes = {node for node in ast.walk(parsed) if isinstance(node, ast.ClassDef)}
+
+    identifiers: set[str] = set()
+    for node in ast.walk(parsed):
+        if isinstance(node, ast.Name) and not isinstance(node.ctx, ast.Load):
+            identifiers.add(node.id)
+        elif isinstance(node, ast.Attribute) and not isinstance(node.ctx, ast.Load):
+            identifiers.add(node.attr)
+    for func in funcs:
+        for arg_list in (
+            func.args.args,
+            func.args.kwonlyargs,
+            [func.args.vararg] if func.args.vararg else [],
+            [func.args.kwarg] if func.args.kwarg else [],
+        ):
+            for arg in arg_list:
+                identifiers.add(arg.arg)
+
+    pairs: dict[str, str] = {}
+    used: set[str] = set()
+
+    for func in funcs:
+        if (
+            func.name != "__init__"
+            and func.name not in protected
+            and func.name not in _BUILTIN_ATTR_NAMES
+        ):
+            pairs[func.name] = _unique_semantic_name(used)
+    for cls in classes:
+        if cls.name not in protected:
+            pairs[cls.name] = _unique_semantic_name(used)
+    for ident in identifiers:
+        if ident not in protected and ident not in _BUILTIN_ATTR_NAMES:
+            pairs[ident] = _unique_semantic_name(used)
+
+    string_regex = r"('|\")[\x1f-\x7e]{1,}?('|\")"
+    originals = [
+        m.group().replace("\\", "\\\\") for m in re.finditer(string_regex, code, re.MULTILINE)
+    ]
+    placeholder = os.urandom(16).hex()
+    code = re.sub(string_regex, f"'{placeholder}'", code, flags=re.MULTILINE)
+
+    for i, orig in enumerate(originals):
+        for key, val in pairs.items():
+            originals[i] = re.sub(
+                r"({.*)" + re.escape(key) + r"(.*})",
+                r"\g<1>" + val + r"\2",
+                orig,
+                flags=re.MULTILINE,
+            )
+
+    step = 0
+    while True:
+        if not is_ci():
+            print(f"\r        {_PROGRESS_CYCLES[step]}", end="")
+        step = (step + 1) % len(_PROGRESS_CYCLES)
+        code = _do_rename(pairs, code)
+        if not any(re.search(rf"\b{re.escape(k)}\b", code) for k in pairs):
+            break
+
+    replace_placeholder = r"('|\")" + placeholder + r"('|\")"
+    for original in originals:
+        code = re.sub(replace_placeholder, original, code, count=1, flags=re.MULTILINE)
+
+    if not is_ci():
+        print(f"\r        {_PROGRESS_CYCLES[-1]}\n\n", end="")
+    return code

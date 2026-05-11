@@ -8,6 +8,12 @@ Anubis is a Python source-code obfuscator with multiple protection layers. It tr
 
 | Layer | What it does |
 |---|---|
+| [Flatten Control Flow](features/flatten.md) | Rewrites function bodies as `while True` state machines |
+| [Opaque Predicates](features/opaque.md) | Wraps functions in always-true guards with dead branches |
+| [XOR String Encryption](features/xor-strings.md) | Encrypts string literals with a random key |
+| [Constant Blinding](features/blind.md) | Hides integer literals: `N` → `(N^R)^R` |
+| [Dynamic Imports](features/dynamic-imports.md) | Replaces `import X` with XOR-encoded `__import__()` calls |
+| [Semantic Noise](features/semantic-noise.md) | Renames identifiers to misleading English names (LLM resistance) |
 | [Carbon](features/carbon.md) | Renames every identifier to random `I`/`l` strings |
 | [Junk Code](features/junk-code.md) | Wraps code in unreachable class definitions |
 | [Mix Strings](features/mix-strings.md) | Replaces string literals with `chr()` chains |
@@ -22,7 +28,7 @@ Anubis is a Python source-code obfuscator with multiple protection layers. It tr
 
 ```bash
 pip install git+https://github.com/GRodolphe/Anubis.git
-anubis script.py --carbon --junk --mix-strings --bcc
+anubis script.py --flatten --opaque --carbon --xor-strings --blind --bcc
 ```
 
 See [Installation](installation.md) for full setup options.

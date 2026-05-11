@@ -30,13 +30,21 @@
 
 ## :dart: About ##
 
-A Python source-code obfuscator with multiple protection layers: identifier renaming, junk code injection,
-custom AES encryption, anti-debugger injection, and optional compilation to a standalone executable via Nuitka.
+A Python source-code obfuscator with multiple protection layers: control flow flattening, opaque predicates,
+XOR string encryption, identifier renaming, junk code injection, custom AES encryption, anti-debugger injection,
+and optional compilation to a standalone executable via Nuitka.
 
-This fork modernizes the original codebase, fixes reported bugs, and adds new features such as import aliasing and a proper CLI.
+This fork modernizes the original codebase, fixes reported bugs, and adds new features including AST-level
+obfuscation passes and LLM deobfuscation resistance (based on research from arxiv:2512.16538 and arxiv:2410.05797).
 
 ## :sparkles: Features ##
 
+:heavy_check_mark: **Control Flow Flattening** — Rewrites every function body as a `while True` state-machine\
+:heavy_check_mark: **Opaque Predicates** — Wraps functions in always-true guards with unreachable dead branches\
+:heavy_check_mark: **XOR String Encryption** — Encrypts string literals with a random key; plaintext never appears in source or .pyc\
+:heavy_check_mark: **Constant Blinding** — Hides integer literals by replacing `N` with `(N^R)^R`\
+:heavy_check_mark: **Dynamic Imports** — Replaces `import X` with XOR-encoded `__import__()` calls\
+:heavy_check_mark: **Semantic Noise** — Renames identifiers to misleading English names to resist LLM-based deobfuscation\
 :heavy_check_mark: **Anti-Debugger** — Kills known debugger processes at runtime (cross-platform; fixes #29 / #18)\
 :heavy_check_mark: **Junk Code** — Injects unreachable class/function definitions\
 :heavy_check_mark: **Mix Strings** — Replaces string literals with `chr()` chains: `"hi"` → `(chr(104)+chr(105))`\
@@ -104,6 +112,15 @@ anubis script.py --carbon --junk
 # Full protection: junk + anti-debug + rename + encrypt
 anubis script.py --junk --antidebug --carbon --mix-strings --encrypt
 
+# AST-level hardening: flatten control flow + opaque predicates + XOR strings
+anubis script.py --flatten --opaque --xor-strings --blind
+
+# LLM-resistant: semantic noise + XOR strings + dynamic imports
+anubis script.py --semantic-noise --xor-strings --blind --dynamic-imports
+
+# Maximum obfuscation: all passes + bytecode compilation
+anubis script.py --junk --antidebug --flatten --opaque --carbon --xor-strings --blind --dynamic-imports --bcc
+
 # Bytecode compilation (hardest to decompile)
 anubis script.py --carbon --mix-strings --bcc
 
@@ -116,19 +133,44 @@ anubis script.py --big-script --carbon --import-alias --compile
 
 ### Flag reference
 
+**Source transforms**
+
 | Flag | Description |
 |------|-------------|
 | `--antidebug` | Inject anti-debugger thread (cross-platform) |
 | `--junk` | Wrap code in unreachable junk class definitions |
+| `--flatten` | Rewrite function bodies as `while True` state machines |
+| `--opaque` | Wrap functions in always-true guards with dead branches |
 | `--mix-strings` | Replace string literals with `chr()` chains |
+| `--xor-strings` | XOR-encrypt string literals with a random key (stronger than `--mix-strings`) |
+| `--blind` | Replace integer literals `N` with `(N^R)^R` for random R |
 | `--big-script` | Inflate output with ~256 KB of random dead-code blobs |
-| `--carbon` | Rename identifiers offline |
-| `--import-alias` | Obfuscate imported module names |
+| `--carbon` | Rename identifiers to random `I`/`l` strings |
+| `--semantic-noise` | Rename identifiers to misleading English names (LLM resistance) |
+| `--import-alias` | Obfuscate imported module names with random aliases |
+| `--dynamic-imports` | Replace `import X` with XOR-encoded `__import__()` calls |
+
+**Encoding / compilation**
+
+| Flag | Description |
+|------|-------------|
 | `--encrypt` | AES-encrypt source into self-decrypting one-liner (requires `ancrypt`) |
 | `--rft` | RFT: zlib+base64 encode source, exec at runtime |
 | `--bcc` | BCC: compile to bytecode, marshal+zlib+base64 loader |
 | `--compile` | Compile output to exe with Nuitka |
 | `--version` | Print version and exit |
+
+### Pipeline order
+
+When multiple flags are combined, passes always run in this fixed order regardless of the order you specify them:
+
+```
+junk → antidebug → junk → flatten → opaque
+→ carbon → semantic-noise
+→ mix-strings → xor-strings → blind
+→ import-alias → dynamic-imports → big-script
+→ encrypt → rft → bcc
+```
 
 ### Building ancrypt
 
