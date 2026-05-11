@@ -19,6 +19,16 @@ from anubis.terminal import error
 # Shared helpers
 # ---------------------------------------------------------------------------
 
+# Method names that exist on common Python builtin types.  Renaming these
+# is unsafe because the same name may appear as an attribute call on a
+# builtin object (e.g. list.pop, str.split) that must not be renamed.
+_BUILTIN_ATTR_NAMES: frozenset[str] = frozenset(
+    attr
+    for typ in (list, dict, set, frozenset, str, bytes, bytearray, tuple, int, float, complex, bool)
+    for attr in dir(typ)
+    if not attr.startswith("__")
+)
+
 
 def _random_name(length: int | None = None) -> str:
     n = length if length is not None else random.randint(8, 20)
@@ -129,13 +139,17 @@ def carbon(code: str) -> str:
     used: set[str] = set()
 
     for func in funcs:
-        if func.name != "__init__" and func.name not in protected:
+        if (
+            func.name != "__init__"
+            and func.name not in protected
+            and func.name not in _BUILTIN_ATTR_NAMES
+        ):
             pairs[func.name] = _unique_name(used)
     for cls in classes:
         if cls.name not in protected:
             pairs[cls.name] = _unique_name(used)
     for ident in identifiers:
-        if ident not in protected:
+        if ident not in protected and ident not in _BUILTIN_ATTR_NAMES:
             pairs[ident] = _unique_name(used)
 
     # Freeze string literals so their contents aren't mangled

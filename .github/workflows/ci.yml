@@ -1,0 +1,207 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint — ruff + ty
+  # ---------------------------------------------------------------------------
+  lint:
+    name: Lint (Python 3.12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: latest
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dev dependencies
+        run: uv sync --group dev
+
+      - name: Ruff — lint
+        run: uv run ruff check src/
+
+      - name: Ruff — format check
+        run: uv run ruff format --check src/
+
+      - name: ty — type check
+        run: uv run ty check src/
+
+  # ---------------------------------------------------------------------------
+  # Obfuscation tests
+  # ---------------------------------------------------------------------------
+  obfuscation-tests:
+    name: Obfuscation tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: latest
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Anubis
+        run: uv sync
+
+      # ------------------------------------------------------------------ strings
+      - name: "[strings] --junk"
+        run: bash tests/check_obf.sh tests/scripts/test_strings.py --junk
+
+      - name: "[strings] --mix-strings"
+        run: bash tests/check_obf.sh tests/scripts/test_strings.py --mix-strings
+
+      - name: "[strings] --carbon --mix-strings"
+        run: bash tests/check_obf.sh tests/scripts/test_strings.py --carbon --mix-strings
+
+      - name: "[strings] --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_strings.py --bcc
+
+      - name: "[strings] --rft"
+        run: bash tests/check_obf.sh tests/scripts/test_strings.py --rft
+
+      # ------------------------------------------------------------------ math
+      - name: "[math] --carbon"
+        run: bash tests/check_obf.sh tests/scripts/test_math.py --carbon
+
+      - name: "[math] --carbon --junk"
+        run: bash tests/check_obf.sh tests/scripts/test_math.py --carbon --junk
+
+      - name: "[math] --carbon --junk --mix-strings"
+        run: bash tests/check_obf.sh tests/scripts/test_math.py --carbon --junk --mix-strings
+
+      - name: "[math] --carbon --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_math.py --carbon --bcc
+
+      - name: "[math] --carbon --rft"
+        run: bash tests/check_obf.sh tests/scripts/test_math.py --carbon --rft
+
+      # ------------------------------------------------------------------ classes
+      - name: "[classes] --carbon"
+        run: bash tests/check_obf.sh tests/scripts/test_classes.py --carbon
+
+      - name: "[classes] --carbon --junk"
+        run: bash tests/check_obf.sh tests/scripts/test_classes.py --carbon --junk
+
+      - name: "[classes] --carbon --junk --mix-strings"
+        run: bash tests/check_obf.sh tests/scripts/test_classes.py --carbon --junk --mix-strings
+
+      - name: "[classes] --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_classes.py --bcc
+
+      - name: "[classes] --carbon --rft"
+        run: bash tests/check_obf.sh tests/scripts/test_classes.py --carbon --rft
+
+      - name: "[classes] --carbon --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_classes.py --carbon --bcc
+
+      # ------------------------------------------------------------------ imports
+      - name: "[imports] --carbon"
+        run: bash tests/check_obf.sh tests/scripts/test_imports.py --carbon
+
+      - name: "[imports] --carbon --import-alias"
+        run: bash tests/check_obf.sh tests/scripts/test_imports.py --carbon --import-alias
+
+      - name: "[imports] --import-alias --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_imports.py --import-alias --bcc
+
+      - name: "[imports] --carbon --import-alias --rft"
+        run: bash tests/check_obf.sh tests/scripts/test_imports.py --carbon --import-alias --rft
+
+      # ------------------------------------------------------------------ control flow
+      - name: "[control-flow] --carbon"
+        run: bash tests/check_obf.sh tests/scripts/test_control_flow.py --carbon
+
+      - name: "[control-flow] --carbon --junk"
+        run: bash tests/check_obf.sh tests/scripts/test_control_flow.py --carbon --junk
+
+      - name: "[control-flow] --carbon --mix-strings"
+        run: bash tests/check_obf.sh tests/scripts/test_control_flow.py --carbon --mix-strings
+
+      - name: "[control-flow] --rft"
+        run: bash tests/check_obf.sh tests/scripts/test_control_flow.py --rft
+
+      - name: "[control-flow] --carbon --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_control_flow.py --carbon --bcc
+
+      # ------------------------------------------------------------------ generators
+      - name: "[generators] --carbon"
+        run: bash tests/check_obf.sh tests/scripts/test_generators.py --carbon
+
+      - name: "[generators] --carbon --junk"
+        run: bash tests/check_obf.sh tests/scripts/test_generators.py --carbon --junk
+
+      - name: "[generators] --junk --mix-strings --big-script"
+        run: bash tests/check_obf.sh tests/scripts/test_generators.py --junk --mix-strings --big-script
+
+      - name: "[generators] --carbon --rft"
+        run: bash tests/check_obf.sh tests/scripts/test_generators.py --carbon --rft
+
+      - name: "[generators] --carbon --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_generators.py --carbon --bcc
+
+      # ------------------------------------------------------------------ decorators
+      - name: "[decorators] --carbon"
+        run: bash tests/check_obf.sh tests/scripts/test_decorators.py --carbon
+
+      - name: "[decorators] --carbon --junk --mix-strings"
+        run: bash tests/check_obf.sh tests/scripts/test_decorators.py --carbon --junk --mix-strings
+
+      - name: "[decorators] --rft"
+        run: bash tests/check_obf.sh tests/scripts/test_decorators.py --rft
+
+      - name: "[decorators] --carbon --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_decorators.py --carbon --bcc
+
+      # ------------------------------------------------------------------ exceptions
+      - name: "[exceptions] --carbon"
+        run: bash tests/check_obf.sh tests/scripts/test_exceptions.py --carbon
+
+      - name: "[exceptions] --carbon --mix-strings"
+        run: bash tests/check_obf.sh tests/scripts/test_exceptions.py --carbon --mix-strings
+
+      - name: "[exceptions] --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_exceptions.py --bcc
+
+      - name: "[exceptions] --carbon --rft"
+        run: bash tests/check_obf.sh tests/scripts/test_exceptions.py --carbon --rft
+
+      # ------------------------------------------------------------------ combined (linked list)
+      - name: "[combined] --carbon"
+        run: bash tests/check_obf.sh tests/scripts/test_combined.py --carbon
+
+      - name: "[combined] --carbon --junk"
+        run: bash tests/check_obf.sh tests/scripts/test_combined.py --carbon --junk
+
+      - name: "[combined] --carbon --junk --mix-strings"
+        run: bash tests/check_obf.sh tests/scripts/test_combined.py --carbon --junk --mix-strings
+
+      - name: "[combined] --carbon --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_combined.py --carbon --bcc
+
+      - name: "[combined] --carbon --rft"
+        run: bash tests/check_obf.sh tests/scripts/test_combined.py --carbon --rft
+
+      - name: "[combined] --carbon --rft --bcc"
+        run: bash tests/check_obf.sh tests/scripts/test_combined.py --carbon --rft --bcc
