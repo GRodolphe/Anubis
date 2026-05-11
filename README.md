@@ -18,6 +18,13 @@
 </p>
 
 <p align="center">
+  <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/GRodolphe/Anubis/ci.yml?branch=main&label=CI" />
+  <img alt="ruff" src="https://img.shields.io/badge/linter-ruff-261230?style=flat&logo=ruff&logoColor=white" />
+  <img alt="ty" src="https://img.shields.io/badge/types-ty-6A0DAD?style=flat" />
+  <img alt="uv" src="https://img.shields.io/badge/package%20manager-uv-DE5FE9?style=flat&logo=uv&logoColor=white" />
+</p>
+
+<p align="center">
   <a href="#dart-about">About</a> &#xa0; | &#xa0;
   <a href="#sparkles-features">Features</a> &#xa0; | &#xa0;
   <a href="#white_check_mark-requirements">Requirements</a> &#xa0; | &#xa0;
