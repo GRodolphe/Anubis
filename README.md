@@ -36,7 +36,7 @@
 
 <br>
 
-## :dart: About ##
+## About ##
 
 **Anubis** is a Python source-code obfuscator that stacks multiple independent protection layers. Each pass is opt-in, composable, and runs in a fixed pipeline so the result is deterministic regardless of the order you specify flags.
 
@@ -44,7 +44,7 @@ Protection ranges from lightweight identifier renaming to full bytecode compilat
 
 This fork modernizes the original codebase, fixes reported bugs, and adds new features including AST-level obfuscation passes and LLM deobfuscation resistance (based on research from [arxiv:2512.16538](https://arxiv.org/abs/2512.16538) and [arxiv:2410.05797](https://arxiv.org/abs/2410.05797)).
 
-## :sparkles: Features ##
+## Features ##
 
 **AST transforms** rewrite the syntax tree before the source ever hits the interpreter
 
@@ -77,7 +77,7 @@ This fork modernizes the original codebase, fixes reported bugs, and adds new fe
 | `--bcc` | Bytecode Compilation: `compile()` → `marshal` → `zlib` → `base64` loader stub |
 | `--compile` | Compiles the obfuscated output to a standalone executable via Nuitka |
 
-## :checkered_flag: Installation ##
+## Installation ##
 
 ### Recommended pipx (isolated, globally available `anubis` command)
 
@@ -106,7 +106,7 @@ pip install git+https://github.com/GRodolphe/Anubis.git
 
 > **Requirements:** Python 3.10+, `uv` or `pipx`. Nuitka and a C compiler are only needed for `--compile`.
 
-## :rocket: Quick Start ##
+## Quick Start ##
 
 ```bash
 # Lightest touch: just rename identifiers
@@ -205,7 +205,7 @@ uv run --group dev python setup.py build_ext --inplace
 # → ancrypt.cpython-*.pyd (Windows)
 ```
 
-## :wrench: CI/CD ##
+## CI/CD ##
 
 Pass `--ci` (or rely on the `CI=true` environment variable that GitHub Actions, GitLab CI, and most other platforms set automatically) for pipeline-safe behaviour:
 
@@ -286,7 +286,7 @@ uv run pytest              # tests
 4. Add the flag to the interactive prompts in `_interactive()`.
 5. Write a test script in `tests/scripts/` and cover it in `.github/workflows/ci.yml`.
 
-## :memo: License ##
+## License ##
 
 MIT see [LICENSE](LICENSE).
 
