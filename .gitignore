@@ -71,3 +71,6 @@ htmlcov/
 .env
 *.env.local
 anubis.toml.local
+
+# Superpowers
+docs/superpowers/
