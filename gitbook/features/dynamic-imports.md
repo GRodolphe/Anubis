@@ -11,7 +11,7 @@ Replaces every `import X` statement with an assignment that calls `__import__()`
 3. The statement is replaced with `X = __import__(decoder(b'...', key))`.
 4. A one-liner decoder is prepended to the file.
 
-`from X import Y` forms are left intact — they are harder to rewrite safely without full dependency analysis.
+`from X import Y` forms are left intact they are harder to rewrite safely without full dependency analysis.
 
 ## Example
 
@@ -34,13 +34,13 @@ sock = __import__(_dec(b'\x70\x6c\x62...', 0x03))
 
 ## What it defeats
 
-- **`grep "import os"`** — no `import` keyword appears for these modules.
-- **Static dependency scanners** — tools that enumerate imports by parsing `import` statements find nothing.
-- **String search for module names** — `os`, `sys`, `socket` etc. don't appear as plain text.
+- **`grep "import os"`** no `import` keyword appears for these modules.
+- **Static dependency scanners** tools that enumerate imports by parsing `import` statements find nothing.
+- **String search for module names** `os`, `sys`, `socket` etc. don't appear as plain text.
 
 ## Notes
 
 - Each run uses a fresh random key, so output differs between runs.
-- `from X import Y` is unchanged — combine with `--import-alias` for partial coverage.
+- `from X import Y` is unchanged combine with `--import-alias` for partial coverage.
 - The decoder name is a random `I`/`l` string that blends in when combined with `--carbon`.
 - Module dotted names (`import os.path`) are encoded in full.

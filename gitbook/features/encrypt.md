@@ -33,7 +33,7 @@ Place the resulting `.so` / `.pyd` file in the same directory as the obfuscated 
 
 - Key derivation: `SHA-256` hash of a 32-byte random key (generated fresh each obfuscation run)
 - Cipher: `AES-256-CBC` via `pycryptodome`
-- The key is stored inside the output file — this protects against casual inspection but not against a determined attacker who reads the source
+- The key is stored inside the output file this protects against casual inspection but not against a determined attacker who reads the source
 
 ## Limitations
 

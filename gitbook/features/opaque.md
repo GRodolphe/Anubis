@@ -2,7 +2,7 @@
 
 **Flag:** `--opaque`
 
-Wraps every function body inside an always-true conditional. The `else` branch contains unreachable dead code. A static analyser or LLM must prove the predicate is always true before it can ignore the dead branch — and the predicate is specifically designed to make that proof non-trivial.
+Wraps every function body inside an always-true conditional. The `else` branch contains unreachable dead code. A static analyser or LLM must prove the predicate is always true before it can ignore the dead branch and the predicate is specifically designed to make that proof non-trivial.
 
 ## How it works
 
@@ -45,9 +45,9 @@ def greet(name):
 
 ## What it defeats
 
-- **Dead-code elimination in static analysis** — the analyser must evaluate the predicate to know the else branch is unreachable.
-- **LLM deobfuscation** — LLMs tend to consider both branches as potentially live, adding semantic noise to their interpretation.
-- **Diff-based analysis** — the additional branch structure obscures where the real code is.
+- **Dead-code elimination in static analysis** the analyser must evaluate the predicate to know the else branch is unreachable.
+- **LLM deobfuscation** LLMs tend to consider both branches as potentially live, adding semantic noise to their interpretation.
+- **Diff-based analysis** the additional branch structure obscures where the real code is.
 
 ## Notes
 

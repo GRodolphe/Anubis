@@ -2,7 +2,7 @@
 
 **Flag:** `--junk`
 
-Junk code injection wraps the target script with unreachable class and method definitions. These classes are never instantiated in the main code path, so they have no effect at runtime — but they increase the volume of code a reverse-engineer must sift through.
+Junk code injection wraps the target script with unreachable class and method definitions. These classes are never instantiated in the main code path, so they have no effect at runtime but they increase the volume of code a reverse-engineer must sift through.
 
 ## How it works
 

@@ -15,13 +15,13 @@ Anubis is safe to run in automated pipelines. Use the `--ci` flag (or rely on th
 
 ## Activating CI mode
 
-**Option 1 — explicit flag** (works everywhere, including local testing):
+**Option 1 explicit flag** (works everywhere, including local testing):
 
 ```bash
 anubis script.py --ci --carbon --bcc
 ```
 
-**Option 2 — environment variable** (zero-config on cloud CI):
+**Option 2 environment variable** (zero-config on cloud CI):
 
 GitHub Actions, GitLab CI, CircleCI, Bitbucket Pipelines, and most other platforms set `CI=true` automatically. Anubis detects this and enables CI mode without any extra flags.
 
@@ -33,7 +33,7 @@ Use `-o` / `--output` to write the obfuscated file to a predictable path your pi
 anubis script.py --ci --carbon --output dist/script-obf.py
 ```
 
-## anubis.toml — pin flags in version control
+## anubis.toml pin flags in version control
 
 Commit an `anubis.toml` at your project root so pipelines stay short and flags are version-controlled:
 
@@ -76,7 +76,7 @@ jobs:
         run: pip install git+https://github.com/GRodolphe/Anubis.git
 
       - name: Obfuscate
-        # CI=true is set automatically — --ci is optional but explicit
+        # CI=true is set automatically --ci is optional but explicit
         run: anubis src/script.py --ci --output dist/script-obf.py
 
       - name: Upload artifact
@@ -119,5 +119,5 @@ anubis script.py --ci --carbon --junk --bcc --output dist/script-obf.py
 ## Notes
 
 - `--encrypt` and `--compile` are mutually exclusive even in CI mode.
-- `--bcc` output is Python-version-specific — run it on the same interpreter version used to obfuscate.
+- `--bcc` output is Python-version-specific run it on the same interpreter version used to obfuscate.
 - The `ANUBIS_CI=1` environment variable is equivalent to `--ci` and can be set in your pipeline's environment config to apply CI mode project-wide without modifying every `anubis` call.

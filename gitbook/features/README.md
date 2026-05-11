@@ -1,6 +1,6 @@
 # Features
 
-Anubis applies protection passes in a fixed pipeline. Each pass is independent — combine as many as you need.
+Anubis applies protection passes in a fixed pipeline. Each pass is independent combine as many as you need.
 
 ## Pipeline order
 

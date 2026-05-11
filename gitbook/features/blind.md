@@ -32,13 +32,13 @@ MAX_RETRIES = (3 ^ 8971) ^ 8971    # evaluates to 3
 
 ## What it defeats
 
-- **Grep/search for known constants** — `grep "4444"` finds nothing.
-- **YARA / signature rules** — rules that match specific numeric values no longer fire.
-- **Quick static inspection** — ports, sizes, and magic numbers are not immediately visible.
+- **Grep/search for known constants** `grep "4444"` finds nothing.
+- **YARA / signature rules** rules that match specific numeric values no longer fire.
+- **Quick static inspection** ports, sizes, and magic numbers are not immediately visible.
 
 ## Notes
 
-- Boolean values (`True`, `False`) are skipped — they are integers in Python but must remain as-is.
+- Boolean values (`True`, `False`) are skipped they are integers in Python but must remain as-is.
 - Values larger than `0xFFFF` (65535) are skipped to keep the mask values reasonable.
 - Floating-point, complex, bytes, and string constants are not affected.
 - Combine with `--xor-strings` to hide both string and numeric constants.

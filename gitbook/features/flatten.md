@@ -43,13 +43,13 @@ def process(data):
 
 ## What it defeats
 
-- **Static control-flow graph analysis** — the original CFG is destroyed; tools see an unstructured loop instead of a clean linear flow.
-- **Decompilers** — bytecode decompilers that reconstruct function structure from control flow are confused by the state-machine pattern.
-- **LLM-based deobfuscation** — the flat, sequential semantics that LLMs rely on are replaced with non-obvious dispatch logic.
+- **Static control-flow graph analysis** the original CFG is destroyed; tools see an unstructured loop instead of a clean linear flow.
+- **Decompilers** bytecode decompilers that reconstruct function structure from control flow are confused by the state-machine pattern.
+- **LLM-based deobfuscation** the flat, sequential semantics that LLMs rely on are replaced with non-obvious dispatch logic.
 
 ## Notes
 
-- Generator functions (`yield`) are skipped — state machines and generators conflict.
+- Generator functions (`yield`) are skipped state machines and generators conflict.
 - Single-statement functions are skipped (no benefit).
-- `break`/`continue` inside nested loops work correctly — they apply to the inner loop, not the outer `while True`.
+- `break`/`continue` inside nested loops work correctly they apply to the inner loop, not the outer `while True`.
 - Pairs well with `--opaque` (which adds always-true guards around function bodies) and `--carbon` (which renames the state variable).

@@ -1,4 +1,4 @@
-# BCC — Bytecode Compilation
+# BCC Bytecode Compilation
 
 **Flag:** `--bcc`
 
@@ -13,7 +13,7 @@ exec(_m.loads(_z.decompress(_b.b64decode(b'eJw...'))))
 
 ## Why it is hard to decompile
 
-Standard decompilers (`uncompyle6`, `decompile3`, `pycdc`) work on `.pyc` files — they expect a file header with a magic number and timestamp. BCC's output has neither: it is a raw marshalled code object wrapped in `zlib+base64`. Most decompilers cannot handle this format without a custom unpacking step.
+Standard decompilers (`uncompyle6`, `decompile3`, `pycdc`) work on `.pyc` files they expect a file header with a magic number and timestamp. BCC's output has neither: it is a raw marshalled code object wrapped in `zlib+base64`. Most decompilers cannot handle this format without a custom unpacking step.
 
 ## Compatibility
 
@@ -32,5 +32,5 @@ anubis script.py --carbon --rft --bcc
 ## Notes
 
 - No external dependencies at runtime (`marshal`, `zlib`, `base64` are stdlib).
-- BCC discards unreferenced constants — `--big-script` blobs are removed if applied before BCC.
+- BCC discards unreferenced constants `--big-script` blobs are removed if applied before BCC.
 - Apply `--big-script` **after** BCC is not possible in the current pipeline; use `--rft` between `--big-script` and `--bcc` if you want blob inflation to survive.

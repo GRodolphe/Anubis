@@ -1,6 +1,6 @@
 # Anubis
 
-> Fork of [Anubis](https://github.com/0sir1ss/Anubis) — originally created by [0sir1ss](https://github.com/0sir1ss).
+> Fork of [Anubis](https://github.com/0sir1ss/Anubis) originally created by [0sir1ss](https://github.com/0sir1ss).
 
 Anubis is a Python source-code obfuscator with multiple protection layers. It transforms readable Python scripts into hardened outputs that are difficult to reverse-engineer, without changing what the code does at runtime.
 

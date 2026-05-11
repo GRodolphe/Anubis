@@ -78,5 +78,5 @@ uv run --group dev python setup.py build_ext --inplace
 ## Releasing
 
 1. Bump `version` in `pyproject.toml` and `src/anubis/__init__.py`.
-2. Push to `main` — CI must pass.
+2. Push to `main` CI must pass.
 3. Tag the commit: `git tag vX.Y.Z && git push --tags`.

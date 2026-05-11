@@ -117,6 +117,6 @@ CLI flags always override `anubis.toml` values. Unknown keys and wrong-typed val
 ## Notes
 
 - `--encrypt` and `--compile` are mutually exclusive.
-- `--bcc` produces Python-version-specific bytecode — run the output on the same Python version used to obfuscate.
-- `--carbon` and `--semantic-noise` both rename identifiers — using both applies `--carbon` first then `--semantic-noise` renames whatever is left. For best results, pick one.
+- `--bcc` produces Python-version-specific bytecode run the output on the same Python version used to obfuscate.
+- `--carbon` and `--semantic-noise` both rename identifiers using both applies `--carbon` first then `--semantic-noise` renames whatever is left. For best results, pick one.
 - Flags can be combined freely; the pipeline order above is always preserved regardless of the order you specify them.

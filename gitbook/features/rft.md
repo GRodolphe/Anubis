@@ -1,4 +1,4 @@
-# RFT — Run From Text
+# RFT Run From Text
 
 **Flag:** `--rft`
 
@@ -31,7 +31,7 @@ exec(_z.decompress(_b.b64decode(b'eJxLy8kvLk4tLk4tKs1VSMsvyklRslIqS...')).decode
 
 ## Notes
 
-- RFT is a thin encoding layer — the original source can be recovered by decoding the blob. Use `--carbon` or `--mix-strings` before `--rft` to obfuscate the source before encoding.
+- RFT is a thin encoding layer the original source can be recovered by decoding the blob. Use `--carbon` or `--mix-strings` before `--rft` to obfuscate the source before encoding.
 - Stacking `--rft` then `--bcc` (the double-encode pattern) hides the `exec` call inside bytecode, making static recovery harder.
 - No external dependencies are required at runtime (`zlib` and `base64` are stdlib).
 - Compression level is set to maximum (`zlib` level 9), so the encoded blob is typically smaller than the original source.

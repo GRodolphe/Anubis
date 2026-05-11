@@ -1,4 +1,4 @@
-# Carbon — Identifier Renaming
+# Carbon Identifier Renaming
 
 **Flag:** `--carbon`
 
@@ -15,8 +15,8 @@ Carbon renames every user-defined identifier in the source to a random string co
 
 - Python keywords (`if`, `for`, `return`, …)
 - Built-in names (`print`, `len`, `range`, …)
-- Names bound by import statements (e.g. `import math` — `math` is not renamed)
-- Built-in type method names (`append`, `pop`, `split`, …) — these are preserved to avoid breaking calls on standard library objects
+- Names bound by import statements (e.g. `import math` `math` is not renamed)
+- Built-in type method names (`append`, `pop`, `split`, …) these are preserved to avoid breaking calls on standard library objects
 
 ## Example
 
@@ -45,6 +45,6 @@ print(IlIlIlIIIl(10))
 ## Notes
 
 - Carbon strips all comments and docstrings before renaming.
-- It is an offline pass — no network requests are made.
+- It is an offline pass no network requests are made.
 - Names are unique within each run (no two identifiers get the same obfuscated name).
 - Combine with `--mix-strings` and `--junk` for stronger obfuscation.

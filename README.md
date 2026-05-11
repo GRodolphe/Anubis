@@ -1,4 +1,4 @@
-**Fork of [Anubis](https://github.com/0sir1ss/Anubis) — originally created by [0sir1ss](https://github.com/0sir1ss).**
+**Fork of [Anubis](https://github.com/0sir1ss/Anubis) originally created by [0sir1ss](https://github.com/0sir1ss).**
 
 <div align="center" id="top">
   <img src="./img.png" alt="Anubis" />
@@ -39,23 +39,23 @@ obfuscation passes and LLM deobfuscation resistance (based on research from arxi
 
 ## :sparkles: Features ##
 
-:heavy_check_mark: **Control Flow Flattening** — Rewrites every function body as a `while True` state-machine\
-:heavy_check_mark: **Opaque Predicates** — Wraps functions in always-true guards with unreachable dead branches\
-:heavy_check_mark: **XOR String Encryption** — Encrypts string literals with a random key; plaintext never appears in source or .pyc\
-:heavy_check_mark: **Constant Blinding** — Hides integer literals by replacing `N` with `(N^R)^R`\
-:heavy_check_mark: **Dynamic Imports** — Replaces `import X` with XOR-encoded `__import__()` calls\
-:heavy_check_mark: **Semantic Noise** — Renames identifiers to misleading English names to resist LLM-based deobfuscation\
-:heavy_check_mark: **Anti-Debugger** — Kills known debugger processes at runtime (cross-platform; fixes #29 / #18)\
-:heavy_check_mark: **Junk Code** — Injects unreachable class/function definitions\
-:heavy_check_mark: **Mix Strings** — Replaces string literals with `chr()` chains: `"hi"` → `(chr(104)+chr(105))`\
-:heavy_check_mark: **Big Script** — Inflates output with ~256 KB of random dead-code blobs\
-:heavy_check_mark: **Carbon** — Renames identifiers, removes comments & docstrings (offline, fixes #31)\
-:heavy_check_mark: **Import Aliasing** — Obfuscates imported module names (feature #26)\
-:heavy_check_mark: **AES Encryption** — Encrypts source into a self-decrypting one-liner\
-:heavy_check_mark: **RFT** — Run From Text: encodes entire source as `zlib+base64` and `exec()`s it\
-:heavy_check_mark: **BCC** — Bytecode Compilation: `compile()` → `marshal` → `zlib` → `base64` loader stub\
-:heavy_check_mark: **CLI interface** — Use flags or interactive prompts\
-:heavy_check_mark: **Nuitka compilation** — Compile the obfuscated output to a standalone exe
+:heavy_check_mark: **Control Flow Flattening** Rewrites every function body as a `while True` state-machine\
+:heavy_check_mark: **Opaque Predicates** Wraps functions in always-true guards with unreachable dead branches\
+:heavy_check_mark: **XOR String Encryption** Encrypts string literals with a random key; plaintext never appears in source or .pyc\
+:heavy_check_mark: **Constant Blinding** Hides integer literals by replacing `N` with `(N^R)^R`\
+:heavy_check_mark: **Dynamic Imports** Replaces `import X` with XOR-encoded `__import__()` calls\
+:heavy_check_mark: **Semantic Noise** Renames identifiers to misleading English names to resist LLM-based deobfuscation\
+:heavy_check_mark: **Anti-Debugger** Kills known debugger processes at runtime (cross-platform; fixes #29 / #18)\
+:heavy_check_mark: **Junk Code** Injects unreachable class/function definitions\
+:heavy_check_mark: **Mix Strings** Replaces string literals with `chr()` chains: `"hi"` → `(chr(104)+chr(105))`\
+:heavy_check_mark: **Big Script** Inflates output with ~256 KB of random dead-code blobs\
+:heavy_check_mark: **Carbon** Renames identifiers, removes comments & docstrings (offline, fixes #31)\
+:heavy_check_mark: **Import Aliasing** Obfuscates imported module names (feature #26)\
+:heavy_check_mark: **AES Encryption** Encrypts source into a self-decrypting one-liner\
+:heavy_check_mark: **RFT** Run From Text: encodes entire source as `zlib+base64` and `exec()`s it\
+:heavy_check_mark: **BCC** Bytecode Compilation: `compile()` → `marshal` → `zlib` → `base64` loader stub\
+:heavy_check_mark: **CLI interface** Use flags or interactive prompts\
+:heavy_check_mark: **Nuitka compilation** Compile the obfuscated output to a standalone exe
 
 ## :white_check_mark: Requirements ##
 
@@ -65,7 +65,7 @@ obfuscation passes and LLM deobfuscation resistance (based on research from arxi
 
 ## :checkered_flag: Installation ##
 
-### Recommended — pipx (isolated, globally available `anubis` command)
+### Recommended pipx (isolated, globally available `anubis` command)
 
 ```bash
 # Install pipx if you don't have it
@@ -79,7 +79,7 @@ git clone https://github.com/GRodolphe/Anubis && cd Anubis
 pipx install .
 ```
 
-### Alternative — uv (project venv)
+### Alternative uv (project venv)
 
 ```bash
 git clone https://github.com/GRodolphe/Anubis && cd Anubis
@@ -87,7 +87,7 @@ uv sync
 uv run anubis --help
 ```
 
-### Alternative — pip
+### Alternative pip
 
 ```bash
 pip install git+https://github.com/GRodolphe/Anubis.git
@@ -130,7 +130,7 @@ anubis script.py --carbon --rft --bcc
 # Inflate + rename + alias imports + compile to exe
 anubis script.py --big-script --carbon --import-alias --compile
 
-# CI/CD pipeline — plain output, exit 1 on error, custom output path
+# CI/CD pipeline plain output, exit 1 on error, custom output path
 anubis script.py --carbon --bcc --ci --output dist/script-obf.py
 ```
 
@@ -245,7 +245,7 @@ uv run ty check src/
 
 ## :memo: License ##
 
-MIT — see [LICENSE](LICENSE).
+MIT see [LICENSE](LICENSE).
 
 &#xa0;
 

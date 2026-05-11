@@ -2,7 +2,7 @@
 
 **Flag:** `--mix-strings`
 
-Mix Strings replaces every plain string literal in the source with an equivalent `chr()` chain expression. The string value is preserved exactly — the obfuscated code produces the same output — but the readable text disappears from the source file.
+Mix Strings replaces every plain string literal in the source with an equivalent `chr()` chain expression. The string value is preserved exactly the obfuscated code produces the same output but the readable text disappears from the source file.
 
 ## Example
 

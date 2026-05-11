@@ -2,7 +2,7 @@
 
 Anubis requires Python **3.10 or later**.
 
-## pipx — recommended
+## pipx recommended
 
 [pipx](https://pipx.pypa.io/) installs Anubis in an isolated environment and makes the `anubis` command available globally.
 
@@ -15,7 +15,7 @@ git clone https://github.com/GRodolphe/Anubis && cd Anubis
 pipx install .
 ```
 
-## uv — project venv
+## uv project venv
 
 ```bash
 git clone https://github.com/GRodolphe/Anubis && cd Anubis
@@ -45,7 +45,7 @@ uv run --group dev python setup.py build_ext --inplace
 # → ancrypt.cpython-*.pyd (Windows)
 ```
 
-Ship `ancrypt.*.so` / `ancrypt.*.pyd` alongside the obfuscated file — it is imported at runtime to decrypt and execute the source.
+Ship `ancrypt.*.so` / `ancrypt.*.pyd` alongside the obfuscated file it is imported at runtime to decrypt and execute the source.
 
 ## Optional: Nuitka (exe compilation)
 

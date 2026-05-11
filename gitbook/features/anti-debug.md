@@ -32,6 +32,6 @@ The list includes 80+ tools, among them:
 
 ## Notes
 
-- The thread is a **daemon thread** — it exits automatically when the main script finishes.
+- The thread is a **daemon thread** it exits automatically when the main script finishes.
 - This is a runtime defence only. It does not affect static analysis of the source file.
 - Combine with `--bcc` or `--rft` to hide the injected code from static inspection.
