@@ -14,9 +14,9 @@ import tokenize
 import zlib
 from typing import TypeVar
 
-_FuncNode = TypeVar("_FuncNode", ast.FunctionDef, ast.AsyncFunctionDef)
-
 from anubis.terminal import error, is_ci
+
+_FuncNode = TypeVar("_FuncNode", ast.FunctionDef, ast.AsyncFunctionDef)
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -118,7 +118,7 @@ def carbon(code: str) -> str:
     funcs = {
         node
         for node in ast.walk(parsed)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
     }
     classes = {node for node in ast.walk(parsed) if isinstance(node, ast.ClassDef)}
 
@@ -746,12 +746,10 @@ def dynamic_imports(code: str) -> str:
 
 
 def _has_yield(node: ast.AST) -> bool:
-    return any(isinstance(child, (ast.Yield, ast.YieldFrom)) for child in ast.walk(node))
+    return any(isinstance(child, ast.Yield | ast.YieldFrom) for child in ast.walk(node))
 
 
-def _flatten_func_body(
-    node: ast.FunctionDef | ast.AsyncFunctionDef,
-) -> ast.FunctionDef | ast.AsyncFunctionDef:
+def _flatten_func_body(node: _FuncNode) -> _FuncNode:
     body = node.body
     if len(body) < 2 or _has_yield(node):
         return node
@@ -762,7 +760,7 @@ def _flatten_func_body(
     for i in reversed(range(len(body))):
         stmt = body[i]
         stmt_body: list[ast.stmt] = [stmt]
-        if not isinstance(stmt, (ast.Return, ast.Raise)):
+        if not isinstance(stmt, ast.Return | ast.Raise):
             stmt_body.append(
                 ast.Assign(
                     targets=[ast.Name(id=state_var, ctx=ast.Store())],
@@ -963,7 +961,7 @@ def semantic_noise(code: str) -> str:
     funcs = {
         node
         for node in ast.walk(parsed)
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef)
     }
     classes = {node for node in ast.walk(parsed) if isinstance(node, ast.ClassDef)}
 

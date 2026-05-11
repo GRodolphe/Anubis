@@ -1,4 +1,5 @@
 """Tests for terminal.py CI helpers."""
+
 from unittest.mock import patch
 
 import pytest

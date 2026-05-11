@@ -11,7 +11,10 @@ def _run(*args, extra_env=None, cwd=None):
         env.update(extra_env)
     return subprocess.run(
         [sys.executable, "-m", "anubis", *args],
-        capture_output=True, text=True, env=env, cwd=str(cwd) if cwd else None,
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(cwd) if cwd else None,
     )
 
 
@@ -42,8 +45,11 @@ def test_output_flag_without_ci_flag(tmp_path):
     out = tmp_path / "via-output-flag.py"
     # Use CI env var to avoid pause, but don't pass --ci flag explicitly
     result = _run(
-        str(tmp_path / "script.py"), "--output", str(out),
-        extra_env={"CI": "true"}, cwd=tmp_path,
+        str(tmp_path / "script.py"),
+        "--output",
+        str(out),
+        extra_env={"CI": "true"},
+        cwd=tmp_path,
     )
     assert result.returncode == 0
     assert out.exists()
@@ -53,7 +59,8 @@ def test_ci_env_var_triggers_ci_mode(tmp_path):
     (tmp_path / "script.py").write_text("x = 1\n")
     result = _run(
         str(tmp_path / "script.py"),
-        extra_env={"CI": "true"}, cwd=tmp_path,
+        extra_env={"CI": "true"},
+        cwd=tmp_path,
     )
     assert result.returncode == 0
     assert "Obfuscated:" in result.stdout
@@ -62,9 +69,7 @@ def test_ci_env_var_triggers_ci_mode(tmp_path):
 def test_toml_config_sets_default(tmp_path):
     (tmp_path / "script.py").write_text("x = 1\n")
     out = tmp_path / "from-toml.py"
-    (tmp_path / "anubis.toml").write_text(
-        f'[obfuscate]\noutput = "{out}"\n'
-    )
+    (tmp_path / "anubis.toml").write_text(f'[obfuscate]\noutput = "{out}"\n')
     result = _run(str(tmp_path / "script.py"), "--ci", cwd=tmp_path)
     assert result.returncode == 0
     assert out.exists()
@@ -74,11 +79,12 @@ def test_cli_flag_overrides_toml(tmp_path):
     (tmp_path / "script.py").write_text("x = 1\n")
     toml_out = tmp_path / "from-toml.py"
     cli_out = tmp_path / "from-cli.py"
-    (tmp_path / "anubis.toml").write_text(
-        f'[obfuscate]\noutput = "{toml_out}"\n'
-    )
+    (tmp_path / "anubis.toml").write_text(f'[obfuscate]\noutput = "{toml_out}"\n')
     result = _run(
-        str(tmp_path / "script.py"), "--ci", "--output", str(cli_out),
+        str(tmp_path / "script.py"),
+        "--ci",
+        "--output",
+        str(cli_out),
         cwd=tmp_path,
     )
     assert result.returncode == 0

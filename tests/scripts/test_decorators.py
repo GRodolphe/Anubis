@@ -5,16 +5,20 @@ def repeat(times):
             for _ in range(times):
                 results.append(func(*args, **kwargs))
             return results
+
         return wrapper
+
     return decorator
 
 
 def memoize(func):
     cache = {}
+
     def wrapper(*args):
         if args not in cache:
             cache[args] = func(*args)
         return cache[args]
+
     return wrapper
 
 

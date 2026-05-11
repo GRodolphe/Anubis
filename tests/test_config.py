@@ -1,4 +1,5 @@
 """Tests for anubis.toml loader."""
+
 from anubis.config import load_config
 
 
@@ -40,8 +41,18 @@ def test_wrong_type_ignored(tmp_path):
 def test_all_bool_keys_accepted(tmp_path):
     toml = "[obfuscate]\n" + "\n".join(
         f"{k} = true"
-        for k in ("antidebug", "junk", "mix_strings", "big_script",
-                  "carbon", "import_alias", "encrypt", "rft", "bcc", "compile")
+        for k in (
+            "antidebug",
+            "junk",
+            "mix_strings",
+            "big_script",
+            "carbon",
+            "import_alias",
+            "encrypt",
+            "rft",
+            "bcc",
+            "compile",
+        )
     )
     (tmp_path / "anubis.toml").write_text(toml)
     result = load_config(tmp_path / "anubis.toml")

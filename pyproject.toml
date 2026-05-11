@@ -34,6 +34,7 @@ dev = [
     "ty>=0.0.35",
     "Cython>=3.1.1",
     "pytest>=8.0",
+    "prek>=0.3",
 ]
 
 # ---------------------------------------------------------------------------
@@ -43,6 +44,7 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+exclude = ["ancrypt.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "C4", "SIM"]
@@ -51,6 +53,9 @@ ignore = [
     "SIM108", # ternary operator — sometimes less readable
     "B904",   # raise-without-from-inside-except — intentional in error()
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/scripts/*.py" = ["SIM110", "SIM113"]  # test scripts favour explicit loops
 
 [tool.ruff.lint.isort]
 known-first-party = ["anubis"]
