@@ -46,7 +46,7 @@ This fork modernizes the original codebase, fixes reported bugs, and adds new fe
 
 ## :sparkles: Features ##
 
-**AST transforms** — rewrite the syntax tree before the source ever hits the interpreter
+**AST transforms** rewrite the syntax tree before the source ever hits the interpreter
 
 | Pass | What it does |
 |------|-------------|
@@ -79,7 +79,7 @@ This fork modernizes the original codebase, fixes reported bugs, and adds new fe
 
 ## :checkered_flag: Installation ##
 
-### Recommended — pipx (isolated, globally available `anubis` command)
+### Recommended pipx (isolated, globally available `anubis` command)
 
 ```bash
 # Install directly from GitHub
@@ -193,7 +193,7 @@ junk → antidebug → junk → flatten → opaque
 
 - `--carbon` and `--semantic-noise` both rename identifiers. Using both applies `--carbon` first; for best results, pick one.
 - `--encrypt` and `--compile` are mutually exclusive.
-- `--bcc` output is Python-version-specific — run it on the same interpreter used to obfuscate.
+- `--bcc` output is Python-version-specific run it on the same interpreter used to obfuscate.
 
 ### Building ancrypt
 
@@ -288,7 +288,7 @@ uv run pytest              # tests
 
 ## :memo: License ##
 
-MIT — see [LICENSE](LICENSE).
+MIT see [LICENSE](LICENSE).
 
 &#xa0;
 
