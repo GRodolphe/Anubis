@@ -12,6 +12,9 @@ import re
 import string
 import tokenize
 import zlib
+from typing import TypeVar
+
+_FuncNode = TypeVar("_FuncNode", ast.FunctionDef, ast.AsyncFunctionDef)
 
 from anubis.terminal import error, is_ci
 
@@ -663,10 +666,7 @@ def opaque_predicates(code: str) -> str:
     """
 
     class _OpaqueTransformer(ast.NodeTransformer):
-        def _wrap(
-            self,
-            node: ast.FunctionDef | ast.AsyncFunctionDef,
-        ) -> ast.FunctionDef | ast.AsyncFunctionDef:
+        def _wrap(self, node: _FuncNode) -> _FuncNode:
             self.generic_visit(node)
             if not node.body or (len(node.body) == 1 and isinstance(node.body[0], ast.Pass)):
                 return node

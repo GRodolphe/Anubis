@@ -9,7 +9,7 @@ if sys.version_info >= (3, 11):
     import tomllib
 else:
     try:
-        import tomli as tomllib  # type: ignore[no-redef]
+        import tomli as tomllib  # type: ignore[no-redef]  # ty: ignore[unresolved-import]
     except ImportError:
         tomllib = None  # type: ignore[assignment]
 

@@ -1,0 +1,73 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+*.egg
+MANIFEST
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env/
+
+# uv
+.uv/
+uv.lock.bak
+
+# Cython build artifacts (ancrypt extension)
+ancrypt.c
+ancrypt*.so
+ancrypt*.pyd
+ancrypt*.dll
+*.so
+*.pyd
+
+# Nuitka compilation output
+*.bin
+*.exe
+*.dist/
+*-obf.py
+*-obf.build/
+*-obf.dist/
+*-obf.onefile-build/
+
+# Test output
+tests/scripts/__pycache__/
+tests/check_obf.sh
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Ruff / linter cache
+.ruff_cache/
+
+# Type checker
+.ty/
+.mypy_cache/
+.pyright/
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+
+# Secrets / local config
+.env
+*.env.local
+anubis.toml.local
