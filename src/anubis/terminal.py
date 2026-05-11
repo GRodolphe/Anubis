@@ -14,11 +14,19 @@ def _ansi_enable() -> None:
 IS_WINDOWS: bool = sys.platform == "win32"
 
 
+def is_ci() -> bool:
+    """Return True when running in a CI environment (CI=true or ANUBIS_CI=1)."""
+    return os.environ.get("CI") == "true" or os.environ.get("ANUBIS_CI") == "1"
+
+
 def clear() -> None:
-    os.system("cls" if IS_WINDOWS else "clear")
+    if not is_ci():
+        os.system("cls" if IS_WINDOWS else "clear")
 
 
 def pause() -> None:
+    if is_ci():
+        return
     if IS_WINDOWS:
         os.system("pause >nul")
     else:
@@ -30,6 +38,9 @@ def leave() -> NoReturn:
 
 
 def error(msg: str) -> NoReturn:
+    if is_ci():
+        print(f"error: {msg}", file=sys.stderr)
+        sys.exit(1)
     print(red(f"        [!] Error : {msg}"), end="")
     pause()
     clear()

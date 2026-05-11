@@ -13,7 +13,7 @@ import string
 import tokenize
 import zlib
 
-from anubis.terminal import error
+from anubis.terminal import error, is_ci
 
 # ---------------------------------------------------------------------------
 # Shared helpers
@@ -169,9 +169,11 @@ def carbon(code: str) -> str:
                 flags=re.MULTILINE,
             )
 
+    _ci = is_ci()
     step = 0
     while True:
-        print(f"\r        {_PROGRESS_CYCLES[step]}", end="")
+        if not _ci:
+            print(f"\r        {_PROGRESS_CYCLES[step]}", end="")
         step = (step + 1) % len(_PROGRESS_CYCLES)
         code = _do_rename(pairs, code)
         if not any(re.search(rf"\b{re.escape(k)}\b", code) for k in pairs):
@@ -181,7 +183,8 @@ def carbon(code: str) -> str:
     for original in originals:
         code = re.sub(replace_placeholder, original, code, count=1, flags=re.MULTILINE)
 
-    print(f"\r        {_PROGRESS_CYCLES[-1]}\n\n", end="")
+    if not _ci:
+        print(f"\r        {_PROGRESS_CYCLES[-1]}\n\n", end="")
     return code
 
 
